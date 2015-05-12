@@ -104,12 +104,16 @@ public class PackageDAO {
     public void updateIfRequired(List<DebianPackage> latestDebianPackages) throws Exception {
         Map<String, DebianPackage> packagesInDBMap = getPackagesInDBMap();
         int packageCount = latestDebianPackages.size();
+
         for (int i = 0; i < packageCount; i++) {
             DebianPackage currentPackage = latestDebianPackages.get(i);
             DebianPackage packageInDB = packagesInDBMap.get(currentPackage.getName());
 
             if (packageInDB != null) {
-                if (!DBHelper.equals(packageInDB, currentPackage)) {
+                if (packageInDB.getVersion() != currentPackage.getVersion()) {
+                    insert(currentPackage);
+                    
+                } else if (!DBHelper.equals(packageInDB, currentPackage)) {
                     currentPackage.setId(packageInDB.getId());
                     update(currentPackage);
                 }
@@ -123,7 +127,14 @@ public class PackageDAO {
         List<DebianPackage> allPackagesInDB = getAllPackages();
         Map<String, DebianPackage> packagesInDBMap = new HashMap<String, DebianPackage>();
         for (DebianPackage currentPackage : allPackagesInDB) {
-            packagesInDBMap.put(currentPackage.getName(), currentPackage);
+
+            String pkgName = currentPackage.getName();
+            String currentPkgVersion = currentPackage.getVersion();
+            DebianPackage mappedPkg = packagesInDBMap.get(pkgName);
+
+            if (packagesInDBMap.get(pkgName) == null || currentPkgVersion.compareTo(mappedPkg.getVersion()) > 0) {
+                packagesInDBMap.put(pkgName, currentPackage);
+            }
         }
         return packagesInDBMap;
     }
